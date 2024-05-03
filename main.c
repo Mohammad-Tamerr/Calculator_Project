@@ -10,6 +10,7 @@
 #include "../../LIB/BIT_MATH.h"
 
 #include "../../MCAL/PORT/PORT_interface.h"
+#include "../../MCAL/DIO/DIO_interface.h"
 
 #include "../../HAL/KEYPAD_DRIVER/KPD_interface.h"
 #include "../../HAL/LCD_DRIVER/LCD_interface.h"
@@ -38,6 +39,9 @@ int main(void)
     u8 OP_FLAG = 0;
     u8 FLOAT_FLAG = 0 ;
     float F_RES = 0 ;
+    u8 N_FLAG1 = 0;
+    u8 N_FLAG2 = 0;
+    u8 NUM_1_END = 0 ;
 
     while (1)
     {
@@ -46,19 +50,32 @@ int main(void)
 		{
 			// Reset calculator
 			lcd_clear();
-            RESET_CALC(&NUM_1, &NUM_2, &OP, &RES, &OP_FLAG , &FLOAT_FLAG);
+            RESET_CALC(&NUM_1, &NUM_2, &OP, &RES, &OP_FLAG , &FLOAT_FLAG,& N_FLAG1 , & N_FLAG2 , & NUM_1_END);
 		}
-        else if ((RET_KEY >= ASCII_0 && RET_KEY <= ASCII_9) && OP_FLAG == 0)
+        else if ((RET_KEY == ASCII_MINUS)&& (OP_FLAG == 0) && NUM_1_END==0 )
+        {
+        	lcd_send_data('-');
+        	N_FLAG1 = 1 ;
+        	NUM_1_END = 1 ;
+        }
+        else if ((RET_KEY >= ASCII_0 && RET_KEY <= ASCII_9) && OP_FLAG == 0 )
         {
             NUM_1 = (NUM_1 * 10) + (RET_KEY - ASCII_0);
             lcd_send_data(RET_KEY);
+            NUM_1_END = 1 ;
         }
-        else if ((RET_KEY >= ASCII_0 && RET_KEY <= ASCII_9) && OP_FLAG == 1)
+
+        else if ((RET_KEY == ASCII_MINUS)&& (OP_FLAG == 1))
+        {
+        	lcd_send_data('-');
+        	N_FLAG2 = 1 ;
+        }
+        else if ((RET_KEY >= ASCII_0 && RET_KEY <= ASCII_9) && (OP_FLAG == 1))
         {
             NUM_2 = (NUM_2 * 10) + (RET_KEY - ASCII_0);
             lcd_send_data(RET_KEY);
         }
-        else if (RET_KEY == ASCII_PLUS || RET_KEY == ASCII_MINUS || RET_KEY == ASCII_MULTIPLY || RET_KEY == ASCII_DIVIDE)
+        else if ((RET_KEY == ASCII_PLUS || RET_KEY == ASCII_MINUS || RET_KEY == ASCII_MULTIPLY || RET_KEY == ASCII_DIVIDE)&& NUM_1_END == 1)
         {
             OP_FLAG = 1;
             OP = RET_KEY;
@@ -71,14 +88,60 @@ int main(void)
     	   switch (OP)
               {
                 case ASCII_PLUS:
-                    RES = NUM_1 + NUM_2;
+                	if( (N_FLAG1 == 0) && (N_FLAG2 == 0 ))
+                	{
+                		 RES = (NUM_1) + (NUM_2);
+                	}
+                	else if(N_FLAG1 == 1 && N_FLAG2 == 0)
+                	{
+                		RES = (-NUM_1) + (NUM_2);
+                	}
+                 	else if(N_FLAG1 == 0 && N_FLAG2 == 1 )
+                    	{
+                    		RES = (NUM_1) - (NUM_2);
+                    	}
+                 	else if(N_FLAG1 == 1 && N_FLAG2 == 1)
+                    	{
+                    		RES = -(NUM_1) - (NUM_2);
+                    	}
                     break;
                 case ASCII_MINUS:
-                    RES = NUM_1 - NUM_2;
+                	if( (N_FLAG1 == 0) && (N_FLAG2 == 0 ))
+                	{
+                		 RES = (NUM_1) + (-NUM_2);
+                	}
+                	else if(N_FLAG1 == 1 && N_FLAG2 == 0)
+                	{
+                		RES = -(NUM_1) + -(NUM_2);
+                	}
+                 	else if(N_FLAG1 == 0 && N_FLAG2 == 1 )
+                    	{
+                    		RES = (NUM_1) + (NUM_2);
+                    	}
+                 	else if(N_FLAG1 == 1 && N_FLAG2 == 1)
+                    	{
+                    		RES = -(NUM_1) + (NUM_2);
+                    	}
                     break;
                 case ASCII_MULTIPLY:
-                    RES = NUM_1 * NUM_2;
+                	if( (N_FLAG1 == 0) && (N_FLAG2 == 0 ))
+                	{
+                		 RES = (NUM_1) * (NUM_2);
+                	}
+                	else if(N_FLAG1 == 1 && N_FLAG2 == 0)
+                	{
+                		RES = -(NUM_1) * (NUM_2);
+                	}
+                 	else if(N_FLAG1 == 0 && N_FLAG2 == 1 )
+                    	{
+                    		RES = (NUM_1) * (-NUM_2);
+                    	}
+                 	else if(N_FLAG1 == 1 && N_FLAG2 == 1)
+                    	{
+                    		RES = (NUM_1) * (NUM_2);
+                    	}
                     break;
+
                 case ASCII_DIVIDE:
                     if (NUM_2 != 0)
                     {
@@ -86,18 +149,63 @@ int main(void)
                     	{
                     		if((NUM_1 % NUM_2) == 0 )
                     		{
-                    			 RES = NUM_1 / NUM_2;
+                            	if( (N_FLAG1 == 0) && (N_FLAG2 == 0 ))
+                            	{
+                            		 RES = (NUM_1) / (NUM_2);
+                            	}
+                            	else if(N_FLAG1 == 1 && N_FLAG2 == 0)
+                            	{
+                            		RES = -(NUM_1) / (NUM_2);
+                            	}
+                             	else if(N_FLAG1 == 0 && N_FLAG2 == 1 )
+                                	{
+                                		RES = (NUM_1) / (-NUM_2);
+                                	}
+                             	else if(N_FLAG1 == 1 && N_FLAG2 == 1)
+                                	{
+                                		RES = (NUM_1) / (NUM_2);
+                                	}
                     		}
                     		else
                     		{
                         		FLOAT_FLAG = 1 ;
-                        		F_RES = (float)NUM_1 / (float)NUM_2;
+                        		if( (N_FLAG1 == 0) && (N_FLAG2 == 0 ))
+								{
+									 F_RES = (float)(NUM_1) / (float)(NUM_2);
+								}
+								else if(N_FLAG1 == 1 && N_FLAG2 == 0)
+								{
+									 F_RES = -(float)(NUM_1) / (float)(NUM_2);
+								}
+								else if(N_FLAG1 == 0 && N_FLAG2 == 1 )
+									{
+									 F_RES = -(float)(NUM_1) / (float)(NUM_2);
+									}
+								else if(N_FLAG1 == 1 && N_FLAG2 == 1)
+									{
+									 F_RES = (float)(NUM_1) / (float)(NUM_2);
+									}
                     		}
                     	}
                     	else if (NUM_1<NUM_2)
                     	{
                     		FLOAT_FLAG = 1 ;
-                    		F_RES = (float)NUM_1 / (float)NUM_2;
+                    		if( (N_FLAG1 == 0) && (N_FLAG2 == 0 ))
+							{
+								 F_RES = (float)(NUM_1) / (float)(NUM_2);
+							}
+							else if(N_FLAG1 == 1 && N_FLAG2 == 0)
+							{
+								 F_RES = -(float)(NUM_1) / (float)(NUM_2);
+							}
+							else if(N_FLAG1 == 0 && N_FLAG2 == 1 )
+								{
+								 F_RES = -(float)(NUM_1) / (float)(NUM_2);
+								}
+							else if(N_FLAG1 == 1 && N_FLAG2 == 1)
+								{
+								 F_RES = (float)(NUM_1) / (float)(NUM_2);
+								}
                     	}
                     }
                     else
@@ -108,7 +216,7 @@ int main(void)
                         lcd_send_string("By ZERO");
                         _delay_ms(2000);
                         lcd_clear();
-                        RESET_CALC(&NUM_1, &NUM_2, &OP, &RES, &OP_FLAG , &FLOAT_FLAG);
+                        RESET_CALC(&NUM_1, &NUM_2, &OP, &RES, &OP_FLAG , &FLOAT_FLAG,& N_FLAG1 , & N_FLAG2 , & NUM_1_END);
                         continue; // Skip further processing
                     }
                     break;
@@ -126,9 +234,8 @@ int main(void)
     	   	   	{
     	   	   		lcd_show_number(RES);
     	   	   	}
-                RESET_CALC(&NUM_1, &NUM_2, &OP, &RES, &OP_FLAG , &FLOAT_FLAG);
-            }
-
+                	RESET_CALC(&NUM_1, &NUM_2, &OP, &RES, &OP_FLAG , &FLOAT_FLAG,& N_FLAG1 , & N_FLAG2 , & NUM_1_END);
+                }
         }
     	return 0;
     }
